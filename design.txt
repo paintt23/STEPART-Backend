@@ -8,6 +8,11 @@ RESPONSE
 
 
 LOGING
+PORT / auth/Login
+201  { accesstoken : String }
+400  {message:String}
+500 {message:String}
+
 
 CREATE ADMIN
 POST
@@ -17,6 +22,15 @@ POST
   password  
   createdAt 
 }
+
+GET AUTHENTICATED USER
+GET/auth/me
+HEADER AUTHENTICATED Bearrer ACCESS_TOKEN
+RESPONSE
+201  { accesstoken : String }
+400  {message:String}
+500 {message:String}
+
 
 DELETE
 

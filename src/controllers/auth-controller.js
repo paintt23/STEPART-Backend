@@ -1,14 +1,14 @@
-const bcrypt = require("bcrypt");
-const prisma = require("../model/prisma");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
+const prisma = require("../modal/prisma");
 
 exports.register = async (req, res, next) => {
   try {
     //validata
-    const { firstName, lastName, Tel, email, password, confirmPassword } =
-      req.body; //ทำหน้าที่ในการอ่านreq.body
+    const { firstName, lastName, email, password, Tel } = req.body; //ทำหน้าที่ในการอ่านreq.body
     const hashedPassword = await bcrypt.hash(password, 12);
-    await prisma.customer.create({
+    await prisma.user.create({
       data: {
         firstName,
         lastName,
@@ -25,67 +25,68 @@ exports.register = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
   try {
+    console.log(req.body);
     const { email, password } = req.body;
-    const targatCus = await prisma.customer.findUnique({
+    console.log(email);
+    const targetUser = await prisma.user.findUnique({
       where: {
         email,
       },
     });
-
-    if (!targatCus) {
+    console.log(targetUser);
+    if (!targetUser) {
       //เช็คว่า หาcustomer เจอในดาต้าเบทไหม
       return res.status(400).json({ message: "invalid credentail" });
     }
-    const isMath = await bcrypt.compare(password, targatCus.password);
+    const isMath = await bcrypt.compare(password, targetUser.password);
     if (!isMath) {
       return res.status(400).json({ message: "invalid credentail" });
     }
 
-    const parload = {
+    const payload = {
       //ใส่ข้อมูลcustomerลงpayload
-      id: targatCus.id,
+      id: targetUser.id,
     };
 
     const accessToken = jwt.sign(
-      parload,
+      payload,
       process.env.JWT_SECRET_KEY || "asdfghjklqwertyu",
       {
         expiresIn: process.env.JWT_EXPIRE,
       }
     );
-    res.status(200).json({ message: "success", accessToken });
+    delete targetUser.password;
+
+    res.status(200).json({ message: "success", accessToken, targetUser });
   } catch (err) {
     next(err);
   }
 };
 
-// const brcrypt = require("bcrypt");
-// const jwt = require("jsonwebtoken");
-// const { registerSchema, loginSchema } = require("../validators/auth-validator");
-// const prisma = require("../model/prisma");
-// const createError = require("../utils/create-validator");
+exports.getMe = async (req, res, next) => {
+  res.status(200).json({ user: req.user });
+};
 
 // exports.register = async (req, res, next) => {
 //   try {
 //     const { value, error } = registerSchema.validate(req.body);
-
 //     if (error) {
 //       return next(error);
 //     }
-//     console.log(process.env.JWT_SECRET_KEY);
-//     value.password = await brcrypt.hash(value.password, 12); //salt หน่วงไว้12
-//     // console.log(value);
-//     const customer = await prisma.customer.create({
+//     value.password = await bcrypt.hash(value.password, 12);
+//     const user = await prisma.user.create({
 //       data: value,
 //     });
-//     const payload = { customerId: customer.id };
+//     const payload = { userId: user.id };
 //     const accessToken = jwt.sign(
 //       payload,
-//       process.env.JWT_SECRET_KEY || "asdfghjklqwertyu",
-//       { expiresIn: process.env.JWT_EXPIRE }
+//       process.env.JWT_SECRET_KEY || "1q2w3e4r5t6y7u8i9o0p",
+//       {
+//         expiresIn: process.env.JWT_EXPIRE,
+//       }
 //     );
-//     res.status(201).json({ accessToken });
-//     console.log(value);
+//     delete user.password;
+//     res.status(201).json({ accessToken, user });
 //   } catch (err) {
 //     next(err);
 //   }
@@ -98,24 +99,31 @@ exports.login = async (req, res, next) => {
 //       return next(error);
 //     }
 //     console.log(value);
-//     const customer = await prisma.customer.findFirst({
+//     // SELECT * FROM user WHERE email = emailOrMobile OR mobile = emailOrMobile
+//     const user = await prisma.user.findFirst({
 //       where: {
-//         OR: [{ email: value.email }],
+//         email: value.email,
 //       },
 //     });
-//     console.log(customer);
-//     if (!customer) {
+//     if (!user) {
 //       return next(createError("invalid credential", 400));
 //     }
-//     const payload = { customerId: customer.id };
+
+//     const isMatch = await bcrypt.compare(value.password, user.password);
+//     if (!isMatch) {
+//       return next(createError("invalid credential", 400));
+//     }
+
+//     const payload = { userId: user.id };
 //     const accessToken = jwt.sign(
 //       payload,
-//       process.env.JWT_SECRET_KEY || "asdfghjkertyui",
+//       process.env.JWT_SECRET_KEY || "1q2w3e4r5t6y7u8i9o0p",
 //       {
 //         expiresIn: process.env.JWT_EXPIRE,
 //       }
 //     );
-//     res.status(200).json({ accessToken });
+//     delete user.password;
+//     res.status(200).json({ accessToken, user });
 //   } catch (err) {
 //     next(err);
 //   }
